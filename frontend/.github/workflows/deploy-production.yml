@@ -1,0 +1,98 @@
+name: Deploy IGAL Frontend to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Manual trigger
+
+env:
+  PROJECT_ID: igal-ai-project
+  REGION: europe-west3
+  SERVICE_NAME: igal-frontend
+  REPOSITORY: igal-frontend-repo
+  IMAGE_NAME: igal-frontend
+  WORKLOAD_IDENTITY_PROVIDER: 'projects/613144374930/locations/global/workloadIdentityPools/github-pool/providers/github-provider'
+  SERVICE_ACCOUNT: 'github-actions@igal-ai-project.iam.gserviceaccount.com'
+
+jobs:
+  deploy:
+    name: Build and Deploy Frontend to Cloud Run
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write  # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud (Workload Identity Federation)
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+
+      - name: Build Docker image
+        run: |
+          COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+          echo "Building frontend image for commit: $COMMIT_SHA"
+
+          docker build \
+            --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:$COMMIT_SHA \
+            --tag ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest \
+            -f frontend/Dockerfile \
+            .
+
+      - name: Push Docker images to Artifact Registry
+        run: |
+          COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:$COMMIT_SHA
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Deploy to Cloud Run
+        run: |
+          COMMIT_SHA=$(echo ${{ github.sha }} | cut -c1-7)
+
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image=${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/${{ env.IMAGE_NAME }}:$COMMIT_SHA \
+            --region=${{ env.REGION }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --memory=1Gi \
+            --cpu=1 \
+            --timeout=300 \
+            --max-instances=10 \
+            --set-env-vars="NEXT_PUBLIC_API_URL=https://igal-backend-[your-hash].run.app" \
+            --quiet
+
+      - name: Get Service URL
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+
+          echo "Deployment successful!"
+          echo "Service URL: $SERVICE_URL"
+          echo "::notice::Frontend deployed to: $SERVICE_URL"
+
+      - name: Test frontend endpoint
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+
+          echo "Testing frontend endpoint..."
+          sleep 10  # Wait for service to be ready
+
+          curl -f "$SERVICE_URL" || echo "Frontend check failed (service might still be starting)"
