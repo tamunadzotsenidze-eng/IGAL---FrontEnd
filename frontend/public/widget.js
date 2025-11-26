@@ -18,7 +18,7 @@
 
   // Configuration
   var config = {
-    apiUrl: 'https://igal-backend-613144374930.europe-west3.run.app',
+    apiUrl: 'https://igal-backend-qnv4kru4hq-ey.a.run.app',
     position: 'bottom-right',
     theme: 'light',
     primaryColor: '#FDB022',
