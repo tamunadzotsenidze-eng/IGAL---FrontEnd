@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGAL Widget Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #FDB022 0%, #F59E0B 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 60px 40px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #1a202c;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #718096;
+            margin-bottom: 40px;
+        }
+
+        .instructions {
+            background: #f7fafc;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: left;
+            margin-bottom: 30px;
+        }
+
+        .instructions h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .instructions p {
+            color: #4a5568;
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #f0fff4;
+            border: 2px solid #9ae6b4;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            color: #22543d;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            background: #38a169;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .arrow {
+            font-size: 48px;
+            margin: 20px 0;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="status">
+            <span class="status-dot"></span>
+            Widget Active
+        </div>
+
+        <h1>IGAL Widget Test</h1>
+        <p class="subtitle">Enterprise RAG-powered Georgian Tax & Financial Law Assistant</p>
+
+        <div class="instructions">
+            <h3>Look for the chat button in the bottom-right corner!</h3>
+            <p>
+                Click the blue chat button to open the IGAL assistant widget.
+                Ask questions in Georgian or English about tax and financial law.
+            </p>
+            <p style="margin-top: 15px;">
+                <strong>Try asking:</strong><br>
+                • "რა არის ფიქსირებული გადასახადი?"<br>
+                • "How do I calculate VAT in Georgia?"<br>
+                • "რა დოკუმენტებია საჭირო ბიზნესის რეგისტრაციისთვის?"
+            </p>
+        </div>
+
+        <div class="arrow">↘️</div>
+    </div>
+
+    <!-- IGAL Chat Widget Snippet -->
+    <script src="/widget.js"></script>
+    <script>
+        // Initialize IGAL widget
+        if (typeof igal !== 'undefined') {
+            igal('init', {
+                apiUrl: 'http://localhost:8000',
+                position: 'bottom-right',
+                theme: 'light',
+                primaryColor: '#FDB022',
+                textColor: '#1F2937'
+            });
+        }
+    </script>
+    <!-- End IGAL Chat Widget -->
+</body>
+</html>

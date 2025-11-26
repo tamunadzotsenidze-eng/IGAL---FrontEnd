@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGAL Widget - Local Test</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 60px 40px;
+        }
+
+        h1 {
+            font-size: 42px;
+            color: #1a202c;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 20px;
+            color: #718096;
+            margin-bottom: 40px;
+        }
+
+        .test-section {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .test-section h3 {
+            color: #2d3748;
+            margin-bottom: 15px;
+        }
+
+        .test-button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 5px;
+        }
+
+        .test-button:hover {
+            background: #5568d3;
+        }
+
+        .log {
+            background: #1a202c;
+            color: #48bb78;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 15px;
+        }
+
+        .log-entry {
+            margin: 5px 0;
+        }
+
+        .log-error {
+            color: #fc8181;
+        }
+
+        .log-success {
+            color: #48bb78;
+        }
+
+        .log-info {
+            color: #63b3ed;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .status-success {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-error {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status-pending {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 IGAL Widget - Testing Console</h1>
+        <p class="subtitle">Test the widget functionality and backend integration</p>
+
+        <div class="test-section">
+            <h3>📍 Widget Display Test</h3>
+            <p>Check if the widget button appears in the bottom-right corner</p>
+            <button class="test-button" onclick="testWidgetDisplay()">✓ Check Widget</button>
+            <button class="test-button" onclick="openWidget()">📱 Open Widget</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🌐 Backend Connectivity Test</h3>
+            <p>Test connection to backend API endpoint</p>
+            <button class="test-button" onclick="testBackendHealth()">Test Health Endpoint</button>
+            <button class="test-button" onclick="testWidgetEndpoint()">Test Widget Endpoint</button>
+            <button class="test-button" onclick="testCloudRunBackend()">Test Cloud Run</button>
+        </div>
+
+        <div class="test-section">
+            <h3>💬 Chat Functionality Test</h3>
+            <p>Test sending messages through the widget</p>
+            <button class="test-button" onclick="sendTestMessage('Hello')">Send: "Hello"</button>
+            <button class="test-button" onclick="sendTestMessage('რა არის გადასახადი?')">Send: Georgian</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Results</h3>
+            <div class="log" id="testLog"></div>
+        </div>
+    </div>
+
+    <!-- Load widget -->
+    <script src="frontend/public/widget.js"></script>
+    <script>
+        // Initialize widget
+        igal('init', {
+            apiUrl: 'http://localhost:8000',  // Real local Django backend with AI!
+            position: 'bottom-right',
+            theme: 'light',
+            primaryColor: '#3B82F6'
+        });
+
+        const log = document.getElementById('testLog');
+
+        function addLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry log-${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function testWidgetDisplay() {
+            const button = document.getElementById('igal-chat-button');
+            const widget = document.getElementById('igal-chat-widget');
+
+            if (button && widget) {
+                addLog('✓ Widget button found', 'success');
+                addLog('✓ Widget container found', 'success');
+                addLog(`Widget position: ${button.style.bottom}, ${button.style.right}`, 'info');
+            } else {
+                addLog('✗ Widget elements not found', 'error');
+            }
+        }
+
+        function openWidget() {
+            const button = document.getElementById('igal-chat-button');
+            if (button) {
+                button.click();
+                addLog('✓ Opening widget...', 'success');
+            } else {
+                addLog('✗ Widget button not found', 'error');
+            }
+        }
+
+        async function testBackendHealth() {
+            addLog('Testing local backend health endpoint...', 'info');
+
+            try {
+                const response = await fetch('http://localhost:8000/health/', {
+                    method: 'GET',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`✓ Local backend is healthy: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    addLog(`✗ Backend responded with status ${response.status}`, 'error');
+                }
+            } catch (error) {
+                addLog(`✗ Cannot connect to local backend: ${error.message}`, 'error');
+                addLog('Try starting backend: cd backend && python manage.py runserver', 'info');
+            }
+        }
+
+        async function testWidgetEndpoint() {
+            addLog('Testing widget endpoint...', 'info');
+
+            try {
+                const response = await fetch('http://localhost:8000/api/widget/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: 'Test message',
+                        session_id: 'test_' + Date.now()
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`✓ Widget endpoint works! Response: ${data.response.substring(0, 100)}...`, 'success');
+                } else {
+                    const error = await response.text();
+                    addLog(`✗ Widget endpoint error (${response.status}): ${error.substring(0, 100)}`, 'error');
+                }
+            } catch (error) {
+                addLog(`✗ Cannot connect to widget endpoint: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCloudRunBackend() {
+            addLog('Testing Cloud Run backend...', 'info');
+
+            try {
+                const response = await fetch('https://igal-backend-qnv4kru4hq-ey.a.run.app/health/', {
+                    method: 'GET',
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    addLog(`✓ Cloud Run backend is healthy: ${JSON.stringify(data)}`, 'success');
+                } else {
+                    addLog(`✗ Cloud Run responded with status ${response.status} (org policy block)`, 'error');
+                }
+            } catch (error) {
+                addLog(`✗ Cannot connect to Cloud Run: ${error.message}`, 'error');
+            }
+        }
+
+        async function sendTestMessage(message) {
+            addLog(`Sending test message: "${message}"`, 'info');
+
+            const input = document.getElementById('igal-input');
+            const sendButton = document.getElementById('igal-send-button');
+
+            if (input && sendButton) {
+                // Open widget if not open
+                const widget = document.getElementById('igal-chat-widget');
+                if (widget.style.display === 'none') {
+                    document.getElementById('igal-chat-button').click();
+                }
+
+                // Set message and send
+                input.value = message;
+                sendButton.click();
+                addLog('✓ Message sent through widget UI', 'success');
+            } else {
+                addLog('✗ Widget input elements not found. Open the widget first.', 'error');
+            }
+        }
+
+        // Auto-run initial tests
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                addLog('=== IGAL Widget Testing Console ===', 'info');
+                addLog('Widget initialized', 'success');
+                testWidgetDisplay();
+            }, 500);
+        });
+    </script>
+</body>
+</html>

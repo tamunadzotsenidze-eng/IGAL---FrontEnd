@@ -1,0 +1,67 @@
+# IGAL Frontend - Production Dockerfile for Next.js 14
+# Multi-stage build for optimal image size
+
+# Stage 1: Dependencies
+FROM node:18-alpine AS deps
+WORKDIR /app
+
+# Install dependencies
+COPY package.json package-lock.json* ./
+RUN npm ci --only=production
+
+# Stage 2: Builder
+FROM node:18-alpine AS builder
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Set environment variables for build
+# These will be overridden at runtime with actual values
+ENV NEXT_PUBLIC_API_URL=https://igal-backend-placeholder.run.app
+ENV NEXT_PUBLIC_API_BASE=/api
+ENV NEXT_PUBLIC_APP_NAME=IGAL
+ENV NEXT_PUBLIC_APP_DESCRIPTION="Georgian Financial & Tax Law Assistant"
+ENV NEXT_PUBLIC_APP_VERSION=1.0.0
+ENV NEXT_PUBLIC_ENABLE_ANALYTICS=false
+ENV NEXT_PUBLIC_ENABLE_AUTH=true
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build Next.js application
+RUN npm run build
+
+# Stage 3: Production runner
+FROM node:18-alpine AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy necessary files from builder
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Set ownership to nextjs user
+RUN chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Start Next.js server
+CMD ["node", "server.js"]
